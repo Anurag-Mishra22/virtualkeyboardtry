@@ -54,7 +54,7 @@ const VideoStream = () => {
         //     transports: ["websocket"],
         // });
         // Initialize socket connection
-        socketRef.current = io("http://50.16.119.52:5000/", {
+        socketRef.current = io("https://virtualkeyboard.yuwawork.in/", {
             transports: ["websocket"],
         });
 

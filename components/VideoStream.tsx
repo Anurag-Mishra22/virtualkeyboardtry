@@ -10,6 +10,8 @@ interface Keypoint {
     x: number;
     y: number;
     z: number;
+    hand_width: number;
+    hand_height: number;
 }
 
 interface KeyboardKey {
@@ -28,7 +30,7 @@ const KEYBOARD_LAYOUT = [
 ];
 
 const COOLDOWN_TIME = 1000;
-const PINCH_THRESHOLD = 30;
+const PINCH_THRESHOLD = 10;
 const FRAME_INTERVAL = 100; // Reduced frame rate
 
 const VideoStream = () => {
@@ -54,9 +56,12 @@ const VideoStream = () => {
         //     transports: ["websocket"],
         // });
         // Initialize socket connection
-        socketRef.current = io("https://virtualkeyboard.yuwawork.in/", {
+        socketRef.current = io("https://virtualkeyboard.yuwawork.in", {
             transports: ["websocket"],
         });
+        // socketRef.current = io("https://virtualkeyboard-bidv.onrender.com/", {
+        //     transports: ["websocket"],
+        // });
 
         socketRef.current.on("connect", () => {
             setIsLoading(false);
@@ -68,7 +73,7 @@ const VideoStream = () => {
         });
 
         socketRef.current.on("hand_keypoints", (data: { keypoints: Keypoint[] }) => {
-            console.log("Received keypoints:", data.keypoints);
+            // console.log("Received keypoints:", data.keypoints);
             setKeypoints(data.keypoints);
         });
 
@@ -85,17 +90,22 @@ const VideoStream = () => {
 
     const calculateDistance = (point1: Keypoint | undefined, point2: Keypoint | undefined): number => {
         if (!point1 || !point2) return Infinity;
-
-        return Math.sqrt(
+        let distance = Math.sqrt(
             Math.pow(point1.x - point2.x, 2) +
             Math.pow(point1.y - point2.y, 2)
         );
+
+        const result = (distance / Math.sqrt(Math.pow(point1.hand_width, 2) + Math.pow(point1.hand_height, 2))) * 100;
+
+
+        return result;
     };
 
     const detectKeyPress = useCallback((): string | null => {
         if (keypoints.length === 0) return null;
 
         const indexTip = keypoints[8];
+
         let closestKey: { key: string; distance: number } | null = { key: "", distance: Infinity };
 
         KEYBOARD_LAYOUT.forEach((row, rowIndex) => {
@@ -123,7 +133,7 @@ const VideoStream = () => {
 
     const handleKeyPress = useCallback((key: string) => {
         if (isCooldownActive || lastKeyPressed.current === key) return;
-        console.log("Key Pressed: ", key);
+        // console.log("Key Pressed: ", key);
 
         setPressedKey(key);
 
@@ -154,9 +164,16 @@ const VideoStream = () => {
                 const y = 50 + rowIndex * 60;
                 const width = 50;
                 const height = 50;
-
+                // if (rowIndex == 4 && colIndex == 1) {
+                //     console.log("Spacebar");
+                //     ctx.fillStyle = key === pressedKey ? "#4caf50" : "#333";
+                //     ctx.fillRect(x, y, width + 40, height + 20);
+                // } else {
                 ctx.fillStyle = key === pressedKey ? "#4caf50" : "#333";
                 ctx.fillRect(x, y, width, height);
+                // console.log(key)
+                // }
+
 
                 if (key === pressedKey) {
                     ctx.strokeStyle = "#ffffff";
@@ -170,6 +187,32 @@ const VideoStream = () => {
             });
         });
     }, [pressedKey]);
+
+    const drawOutputText = useCallback((ctx: CanvasRenderingContext2D) => {
+        if (outputText) {
+            const text = "Output Text: " + outputText;
+            const fontSize = 24;
+
+            // Set font style
+            ctx.font = `${fontSize}px Arial`;
+
+            // Measure the text width and height
+            const textWidth = ctx.measureText(text).width;
+            const textHeight = fontSize; // approximate height for a 24px font
+
+            // Set the position for the text (you can adjust this as needed)
+            const x = 20;
+            const y = canvasRef.current!.height - 30;
+
+            // Draw a black background rectangle (boundary box)
+            ctx.fillStyle = "black";
+            ctx.fillRect(x - 10, y - textHeight, textWidth + 20, textHeight + 10); // padding around the text
+
+            // Draw the text in white
+            ctx.fillStyle = "white";
+            ctx.fillText(text, x, y);
+        }
+    }, [outputText]);
 
     const drawKeypoints = useCallback(() => {
         const canvas = canvasRef.current;
@@ -219,6 +262,7 @@ const VideoStream = () => {
             // Restore the transform before drawing keyboard
             context.restore();
             drawKeyboard(context);
+            drawOutputText(context);
         }
 
         requestAnimationFrame(drawKeypoints);
@@ -241,6 +285,7 @@ const VideoStream = () => {
 
         if (distance < PINCH_THRESHOLD && !isCooldownActive) {
             const detectedKey = detectKeyPress();
+            console.log("Detected Key:", detectedKey);
             if (detectedKey) {
                 handleKeyPress(detectedKey);
             }
@@ -264,6 +309,8 @@ const VideoStream = () => {
         return <div>Loading...</div>;
     }
 
+    // console.log("Keypoints:", keypoints);
+
     return (
         <div className="relative w-[640px] h-[480px] mt-[400px]">
             <Webcam
@@ -281,7 +328,7 @@ const VideoStream = () => {
                 ref={canvasRef}
                 className="absolute top-0 left-0 w-full h-full z-[2] pointer-events-none"
             />
-            <div className="absolute -bottom-32">
+            <div className="absolute bottom-32">
                 <h1>Output Text: {outputText}</h1>
             </div>
         </div>

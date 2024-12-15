@@ -56,7 +56,7 @@ const VideoStream = () => {
         //     transports: ["websocket"],
         // });
         // Initialize socket connection
-        socketRef.current = io("https://virtualkeyboard.yuwawork.in", {
+        socketRef.current = io("ws://virtualkeyboard.yuwawork.in", {
             transports: ["websocket"],
         });
         // socketRef.current = io("https://virtualkeyboard-bidv.onrender.com/", {

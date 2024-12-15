@@ -48,17 +48,17 @@ const VideoStream = () => {
 
     useEffect(() => {
         // Initialize socket connection
-        socketRef.current = io("http://virtualkeyboard.yuwawork.in:5000/", {
-            transports: ["websocket"],
-        });
+        // socketRef.current = io("http://virtualkeyboard.yuwawork.in:5000/", {
+        //     transports: ["websocket"],
+        // });
         // Initialize socket connection
         // socketRef.current = io("ws://localhost:5000", {
         //     transports: ["websocket"],
         // });
         // Initialize socket connection
-        // socketRef.current = io("https://virtualkeyboard.yuwawork.in", {
-        //     transports: ["websocket"],
-        // });
+        socketRef.current = io("https://virtualkeyboard.yuwawork.in/", {
+            transports: ["websocket"],
+        });
         // socketRef.current = io("https://virtualkeyboard-bidv.onrender.com/", {
         //     transports: ["websocket"],
         // });
